@@ -6,7 +6,7 @@ const portionController = require('../../controllers/portionController');
 router.post('/', portionController.createPortion);
 router.get('/', portionController.getAllPortions);
 router.get('/:id', portionController.getPortionById);
-// router.put('/:id', portionController.updatePortion);
-// router.delete('/:id', portionController.deletePortion);
+router.put('/:id', portionController.updatePortion);
+router.delete('/:id', portionController.deletePortion);
 
 module.exports = router;
