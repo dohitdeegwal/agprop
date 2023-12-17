@@ -1,4 +1,5 @@
 const Property = require('../models/Property');
+const Portion = require('../models/Portion');
 
 const propertyController = {
     async getAllProperties(req, res) {
