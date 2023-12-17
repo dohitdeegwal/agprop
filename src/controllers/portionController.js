@@ -105,7 +105,7 @@ const portionController = {
 
     async updatePortion(req, res) {
         try {
-            const { propertyId, landlordId, brokerId, ...portionData } = req.body;
+            const { propertyId, landlordId, brokerId } = req.body;
 
             if (landlordId && !isValidObjectId(landlordId)) {
                 return res.status(400).json({ error: 'Invalid landlord ID format' });
@@ -116,9 +116,11 @@ const portionController = {
             }
 
             // Check if the landlord exists
-            const existingLandlord = await Landlord.findById(landlordId);
-            if (!existingLandlord) {
-                return res.status(404).json({ error: 'Landlord not found' });
+            if(landlordId) {
+                const existingLandlord = await Landlord.findById(landlordId);
+                if (!existingLandlord) {
+                    return res.status(404).json({ error: 'Landlord not found' });
+                }
             }
 
             // Check if the broker exists
@@ -141,25 +143,14 @@ const portionController = {
                 if (!property) {
                     return res.status(404).json({ error: 'Property not found' });
                 }
-            } else {
-                // Create a new property if propertyId is not provided
-                property = await Property.create({ name: portionData.propertyName });
             }
 
             // Update the portion and associate it with the property, landlord, and broker
             const portion = await Portion.findByIdAndUpdate(
                 req.params.id,
-                {
-                    ...portionData,
-                    property: property._id,
-                    landlord: landlordId,
-                    broker: brokerId,
-                },
+                req.body,
                 { new: true }
             );
-
-            property.portions.push(portion._id);
-            await property.save();
 
             res.json(portion);
         } catch (error) {
