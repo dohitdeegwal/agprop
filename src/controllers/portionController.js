@@ -193,7 +193,13 @@ const portionController = {
                 property.portions = property.portions.filter(
                     (portionId) => portionId.toString() !== id
                 );
-                await property.save();
+
+                // If there are no remaining portions, delete the property
+                if (property.portions.length === 0) {
+                    await Property.findByIdAndDelete(property._id);
+                } else {
+                    await property.save();
+                }
             }
 
             // Delete the portion
@@ -204,7 +210,8 @@ const portionController = {
             console.error(error);
             res.status(500).json({ error: 'Internal Server Error' });
         }
-    },
+    }
+
 };
 
 module.exports = portionController;
