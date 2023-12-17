@@ -1,45 +1,61 @@
+const mongoose = require('mongoose');
 const Portion = require('../models/Portion');
 const Property = require('../models/Property');
 const Landlord = require('../models/Landlord');
 const Broker = require('../models/Broker');
+
+const isValidObjectId = mongoose.isValidObjectId;
 
 const portionController = {
     async createPortion(req, res) {
         try {
             const { propertyId, landlordId, brokerId, ...portionData } = req.body;
 
-            let property, landlord, broker;
+            if (landlordId && !isValidObjectId(landlordId)) {
+                return res.status(400).json({ error: 'Invalid landlord ID format' });
+            }
+
+            if (brokerId && !isValidObjectId(brokerId)) {
+                return res.status(400).json({ error: 'Invalid broker ID format' });
+            }
 
             // Check if the landlord exists
-            landlord = await Landlord.findById(landlordId);
-            if (!landlord) {
+            const existingLandlord = await Landlord.findById(landlordId);
+            if (!existingLandlord) {
                 return res.status(404).json({ error: 'Landlord not found' });
             }
 
             // Check if the broker exists
-            broker = await Broker.findById(brokerId);
-            if (!broker) {
-                return res.status(404).json({ error: 'Broker not found' });
+            if (brokerId) {
+                const existingBroker = await Broker.findById(brokerId);
+                if (!existingBroker) {
+                    return res.status(404).json({ error: 'Broker not found' });
+                }
             }
 
+            let property;
+
             // Check if the property exists
+            if (propertyId && !isValidObjectId(propertyId)) {
+                return res.status(400).json({ error: 'Invalid property ID format' });
+            }
+
             if (propertyId) {
                 property = await Property.findById(propertyId);
                 if (!property) {
-                    console.log('Property not found');
                     return res.status(404).json({ error: 'Property not found' });
                 }
             } else {
                 // Create a new property if propertyId is not provided
-                property = await Property.create({name: portionData.propertyName});
+                property = await Property.create({ name: portionData.propertyName });
             }
 
             // Create the portion and associate it with the property, landlord, and broker
             const portion = await Portion.create({
                 ...portionData,
                 property: property._id,
-                landlord: landlord._id,
-                broker: broker._id,
+                landlord: landlordId,
+                broker: brokerId,
             });
 
             property.portions.push(portion._id);
@@ -49,7 +65,7 @@ const portionController = {
         } catch (error) {
             if (error.name === 'ValidationError') {
                 // Mongoose validation error
-                const validationErrors = Object.values(error.errors).map(err => err.message);
+                const validationErrors = Object.values(error.errors).map((err) => err.message);
                 res.status(400).json({ error: 'Validation Error', messages: validationErrors });
             } else {
                 console.error(error);
@@ -69,8 +85,14 @@ const portionController = {
     },
 
     async getPortionById(req, res) {
+        const { id } = req.params;
+
+        if (!isValidObjectId(id)) {
+            return res.status(400).json({ error: 'Invalid ID format' });
+        }
+
         try {
-            const portion = await Portion.findById(req.params.id);
+            const portion = await Portion.findById(id);
             if (!portion) {
                 return res.status(404).json({ error: 'Portion not found' });
             }
@@ -85,30 +107,43 @@ const portionController = {
         try {
             const { propertyId, landlordId, brokerId, ...portionData } = req.body;
 
-            let property, landlord, broker;
+            if (landlordId && !isValidObjectId(landlordId)) {
+                return res.status(400).json({ error: 'Invalid landlord ID format' });
+            }
+
+            if (brokerId && !isValidObjectId(brokerId)) {
+                return res.status(400).json({ error: 'Invalid broker ID format' });
+            }
 
             // Check if the landlord exists
-            landlord = await Landlord.findById(landlordId);
-            if (landlordId && !landlord) {
+            const existingLandlord = await Landlord.findById(landlordId);
+            if (!existingLandlord) {
                 return res.status(404).json({ error: 'Landlord not found' });
             }
 
             // Check if the broker exists
-            broker = await Broker.findById(brokerId);
-            if (brokerId && !broker) {
-                return res.status(404).json({ error: 'Broker not found' });
+            if (brokerId) {
+                const existingBroker = await Broker.findById(brokerId);
+                if (!existingBroker) {
+                    return res.status(404).json({ error: 'Broker not found' });
+                }
             }
 
+            let property;
+
             // Check if the property exists
+            if (propertyId && !isValidObjectId(propertyId)) {
+                return res.status(400).json({ error: 'Invalid property ID format' });
+            }
+
             if (propertyId) {
                 property = await Property.findById(propertyId);
-                if (propertyId && !property) {
-                    console.log('Property not found');
+                if (!property) {
                     return res.status(404).json({ error: 'Property not found' });
                 }
             } else {
                 // Create a new property if propertyId is not provided
-                property = await Property.create({name: portionData.propertyName});
+                property = await Property.create({ name: portionData.propertyName });
             }
 
             // Update the portion and associate it with the property, landlord, and broker
@@ -117,8 +152,8 @@ const portionController = {
                 {
                     ...portionData,
                     property: property._id,
-                    landlord: landlord._id,
-                    broker: broker._id,
+                    landlord: landlordId,
+                    broker: brokerId,
                 },
                 { new: true }
             );
@@ -130,7 +165,7 @@ const portionController = {
         } catch (error) {
             if (error.name === 'ValidationError') {
                 // Mongoose validation error
-                const validationErrors = Object.values(error.errors).map(err => err.message);
+                const validationErrors = Object.values(error.errors).map((err) => err.message);
                 res.status(400).json({ error: 'Validation Error', messages: validationErrors });
             } else {
                 console.error(error);
